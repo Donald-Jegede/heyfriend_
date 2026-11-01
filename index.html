@@ -4,6 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Hey Friend AI</title>
 
 <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
@@ -16,7 +17,6 @@ MathJax = {
 };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-<script src="https://www.youtube.com/iframe_api"></script>
 
 <style>
 * { box-sizing: border-box; }
@@ -31,6 +31,7 @@ MathJax = {
   --accent: #7c6cff;
   --accent2: #36c8ff;
   --green: #43d9a3;
+  --red: #ff8195;
 }
 
 body {
@@ -57,7 +58,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 15px;
+  gap: 12px;
   border-bottom: 1px solid var(--border);
   padding: 8px 0 18px;
 }
@@ -81,6 +82,11 @@ header {
 
 .brand h1 { font-size: 20px; margin: 0; }
 .brand p { margin: 3px 0 0; font-size: 12px; color: var(--muted); }
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
 
 .settings-button, .control-button {
   border: 1px solid var(--border);
@@ -280,14 +286,38 @@ header {
   margin-top: 12px;
 }
 
-/* MUSIC PLAYER */
+/* MUSIC BUTTON AND POPUP */
 
-.music-panel {
-  background: linear-gradient(135deg, #171d36, #111827);
+.music-trigger {
+  border: 1px solid #474078;
+  background: #211d3e;
+  color: #d8d0ff;
+  padding: 10px 13px;
+  border-radius: 10px;
+}
+
+.music-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #000b;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+}
+
+.music-backdrop.show { display: flex; }
+
+.music-modal {
+  width: min(520px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: #111827;
   border: 1px solid #34385f;
   border-radius: 16px;
-  padding: 17px;
-  margin: 5px 0 20px;
+  padding: 18px;
+  box-shadow: 0 20px 80px #0009;
 }
 
 .music-heading {
@@ -303,9 +333,12 @@ header {
   margin: 0;
 }
 
-.music-heading span {
-  font-size: 11px;
-  color: var(--muted);
+.music-heading button {
+  background: #252b45;
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 11px;
 }
 
 .music-screen {
@@ -316,36 +349,21 @@ header {
   width: 100%;
 }
 
-#youtubePlayer {
+#youtubePlayer,
+.music-screen iframe {
   width: 100%;
   height: 100%;
 }
 
-.music-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin: 13px 0;
-}
-
-.music-title {
-  font-weight: 650;
-  font-size: 14px;
-  overflow-wrap: anywhere;
-}
-
-.music-subtitle {
-  color: var(--muted);
-  font-size: 12px;
-  margin-top: 4px;
-}
+.music-info { margin: 12px 0; }
+.music-title { font-weight: 650; font-size: 14px; }
+.music-subtitle { color: var(--muted); font-size: 12px; margin-top: 4px; }
 
 .music-controls {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   flex-wrap: wrap;
 }
 
@@ -462,7 +480,7 @@ header {
   align-items: center;
   justify-content: center;
   padding: 18px;
-  z-index: 10;
+  z-index: 30;
 }
 
 .modal-backdrop.show { display: flex; }
@@ -487,7 +505,7 @@ header {
   margin-bottom: 7px;
 }
 
-.field input,
+.field input:not([type="checkbox"]),
 .field select {
   width: 100%;
   background: #090f1c;
@@ -505,10 +523,30 @@ header {
   margin-top: 20px;
 }
 
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #202b40;
+  color: white;
+  border: 1px solid var(--border);
+  padding: 11px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  z-index: 50;
+  display: none;
+  max-width: calc(100% - 30px);
+}
+
+.toast.show { display: block; }
+
 @media(max-width: 600px) {
   .app { padding: 13px; }
   .message-body { max-width: 90%; }
   .message-content table { font-size: 12px; }
+  .brand p { display: none; }
+  .settings-button, .music-trigger { padding: 9px 10px; }
 }
 </style>
 </head>
@@ -524,59 +562,17 @@ header {
       <p>Your personal AI voice assistant</p>
     </div>
   </div>
-  <button class="settings-button" id="settingsButton">⚙ Settings</button>
+
+  <div class="header-actions">
+    <button class="music-trigger" id="musicButton">🎵 Music</button>
+    <button class="settings-button" id="settingsButton">⚙ Settings</button>
+  </div>
 </header>
 
 <div class="status">
   <span class="status-dot" id="statusDot"></span>
   <span id="statusText">Ready when you are</span>
 </div>
-
-<!-- MUSIC PLAYER -->
-<section class="music-panel">
-  <div class="music-heading">
-    <h2>🎵 Hey Friend Music</h2>
-    <span id="musicStatus">Ready to play</span>
-  </div>
-
-  <div class="music-screen">
-    <div id="youtubePlayer"></div>
-  </div>
-
-  <div class="music-info">
-    <div>
-      <div class="music-title" id="musicTitle">Nothing playing</div>
-      <div class="music-subtitle" id="musicSubtitle">Add songs to your library below</div>
-    </div>
-  </div>
-
-  <div class="music-controls">
-    <button id="previousSong" title="Previous song">⏮</button>
-    <button class="play" id="playPauseSong" title="Play or pause">▶</button>
-    <button id="nextSong" title="Next song">⏭</button>
-    <button id="shuffleSong" title="Random song">🔀</button>
-  </div>
-
-  <div class="library">
-    <div class="library-top">
-      <strong>Your music library</strong>
-      <span id="songCount">0 songs</span>
-    </div>
-
-    <div class="add-song">
-      <input id="songUrl" placeholder="Paste a YouTube video link">
-      <input id="songName" placeholder="Song name (optional)">
-      <button id="addSong">+ Add</button>
-    </div>
-
-    <div class="song-list" id="songList"></div>
-
-    <div class="small-note">
-      Add regular YouTube video links. Some videos may not allow embedding.
-      Songs are saved in this browser.
-    </div>
-  </div>
-</section>
 
 <main class="chat" id="chat">
   <div class="message assistant">
@@ -608,6 +604,58 @@ header {
 </div>
 
 </div>
+
+<!-- MUSIC POPUP -->
+
+<div class="music-backdrop" id="musicBackdrop">
+  <section class="music-modal">
+    <div class="music-heading">
+      <div>
+        <h2>🎵 Hey Friend Music</h2>
+        <span id="musicStatus" class="small-note">Ready to play</span>
+      </div>
+      <button id="closeMusic">✕</button>
+    </div>
+
+    <div class="music-screen">
+      <div id="youtubePlayer"></div>
+    </div>
+
+    <div class="music-info">
+      <div class="music-title" id="musicTitle">Nothing playing</div>
+      <div class="music-subtitle" id="musicSubtitle">Add songs to your library below</div>
+    </div>
+
+    <div class="music-controls">
+      <button id="previousSong">⏮</button>
+      <button class="play" id="playPauseSong">▶</button>
+      <button id="nextSong">⏭</button>
+      <button id="shuffleSong">🔀</button>
+    </div>
+
+    <div class="library">
+      <div class="library-top">
+        <strong>Your music library</strong>
+        <span id="songCount">0 songs</span>
+      </div>
+
+      <div class="add-song">
+        <input id="songUrl" placeholder="YouTube video link">
+        <input id="songName" placeholder="Song name (optional)">
+        <button id="addSong">+ Add</button>
+      </div>
+
+      <div class="song-list" id="songList"></div>
+
+      <div class="small-note">
+        Add YouTube video links to your library. Some videos don't allow embedding.
+        Songs are saved in this browser.
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- SETTINGS -->
 
 <div class="modal-backdrop" id="settingsModal">
   <div class="modal">
@@ -651,8 +699,8 @@ header {
     </div>
 
     <p class="small-note">
-      For a public website, protect your Groq API key using a Cloudflare Worker.
-      Do not publish your key in your HTML.
+      A browser-side API key is visible to anyone who can inspect your website.
+      For a public site, use a Cloudflare Worker to protect it.
     </p>
 
     <div class="modal-actions">
@@ -662,10 +710,12 @@ header {
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
 const $ = id => document.getElementById(id);
 
-/* ---------------- AI SETTINGS ---------------- */
+/* ---------------- STATE ---------------- */
 
 let apiKey = "";
 let conversation = [];
@@ -681,6 +731,17 @@ function setStatus(text, state = "") {
   statusDot.className = "status-dot " + state;
 }
 
+let toastTimer;
+
+function toast(message) {
+  const box = $("toast");
+  box.textContent = message;
+  box.classList.add("show");
+
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => box.classList.remove("show"), 3200);
+}
+
 function scrollToBottom() {
   window.scrollTo({
     top: document.body.scrollHeight,
@@ -688,7 +749,7 @@ function scrollToBottom() {
   });
 }
 
-/* ---------------- MARKDOWN AND CHARTS ---------------- */
+/* ---------------- MARKDOWN ---------------- */
 
 const md = window.markdownit({
   html: false,
@@ -775,16 +836,16 @@ function addMessage(role, content = "", streaming = false) {
   return contentBox;
 }
 
-/* ---------------- SPEECH ---------------- */
+/* ---------------- SPEECH SYNTHESIS ---------------- */
 
 function cleanSpeechText(text) {
   return text
-    .replace(/[\p{Extended_Pictographic}\p{Emoji_Component}\p{Regional_Indicator}\uFE0F\u200D]/gu, "")
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/`([^`]+)`/g, "$1")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
     .replace(/<[^>]*>/g, " ")
+    .replace(/[\p{Extended_Pictographic}\p{Emoji_Component}\p{Regional_Indicator}\uFE0F\u200D]/gu, "")
     .replace(/[#*_~>|]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -795,7 +856,7 @@ let speechWaiters = [];
 let speechCancelled = false;
 
 function queueSpeech(text) {
-  if (!$("speechEnabled").checked || speechCancelled) return;
+  if (!$("speechEnabled").checked || speechCancelled || !("speechSynthesis" in window)) return;
 
   const clean = cleanSpeechText(text);
   if (!clean) return;
@@ -831,7 +892,8 @@ function waitForSpeech() {
 }
 
 function cancelSpeech() {
-  speechSynthesis.cancel();
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+
   speechPending = 0;
   speechWaiters.forEach(resolve => resolve());
   speechWaiters = [];
@@ -856,7 +918,7 @@ function createSpeechSentences(buffer, flush = false) {
   return { sentences, remaining: buffer };
 }
 
-/* ---------------- MUSIC LIBRARY ---------------- */
+/* ---------------- MUSIC ---------------- */
 
 let songs = [];
 
@@ -872,9 +934,25 @@ let player = null;
 let playerReady = false;
 let musicPlaying = false;
 
+function openMusic() {
+  $("musicBackdrop").classList.add("show");
+
+  if (!playerReady) {
+    $("musicStatus").textContent = "Loading music player...";
+  }
+}
+
+function closeMusic() {
+  $("musicBackdrop").classList.remove("show");
+}
+
 function saveSongs() {
-  localStorage.setItem("heyFriendSongs", JSON.stringify(songs));
-  renderSongList();
+  try {
+    localStorage.setItem("heyFriendSongs", JSON.stringify(songs));
+    renderSongList();
+  } catch {
+    toast("Couldn't save your music library in this browser.");
+  }
 }
 
 function extractYouTubeId(value) {
@@ -886,8 +964,9 @@ function extractYouTubeId(value) {
     }
 
     if (
-      url.hostname.includes("youtube.com") ||
-      url.hostname.includes("youtube-nocookie.com")
+      url.hostname === "youtube.com" ||
+      url.hostname.endsWith(".youtube.com") ||
+      url.hostname === "youtube-nocookie.com"
     ) {
       if (url.pathname === "/watch") {
         return url.searchParams.get("v");
@@ -910,12 +989,12 @@ function addSong() {
   const id = extractYouTubeId(url);
 
   if (!id || !/^[a-zA-Z0-9_-]{11}$/.test(id)) {
-    alert("Please paste a valid YouTube video link.");
+    toast("Please paste a valid YouTube video link.");
     return;
   }
 
   if (songs.some(song => song.id === id)) {
-    alert("That song is already in your library.");
+    toast("That video is already in your library.");
     return;
   }
 
@@ -929,6 +1008,7 @@ function addSong() {
 
   saveSongs();
   $("musicStatus").textContent = "Song added!";
+  toast("Added to your music library!");
 }
 
 function renderSongList() {
@@ -941,7 +1021,7 @@ function renderSongList() {
   if (songs.length === 0) {
     const empty = document.createElement("div");
     empty.className = "empty-library";
-    empty.textContent = "Your library is empty. Paste a YouTube link above to add your first song.";
+    empty.textContent = "Your library is empty. Add a YouTube link to get started.";
     list.appendChild(empty);
     return;
   }
@@ -957,20 +1037,24 @@ function renderSongList() {
     const play = document.createElement("button");
     play.textContent = "▶";
     play.title = "Play song";
-    play.onclick = () => playSong(index);
+    play.onclick = () => {
+      openMusic();
+      playSong(index);
+    };
 
     const remove = document.createElement("button");
     remove.textContent = "✕";
     remove.className = "delete-song";
     remove.title = "Remove song";
+
     remove.onclick = () => {
+      const wasCurrent = currentSongIndex === index;
+
+      if (wasCurrent) stopMusic();
+
       songs.splice(index, 1);
 
-      if (currentSongIndex === index) {
-        stopMusic();
-      } else if (currentSongIndex > index) {
-        currentSongIndex--;
-      }
+      if (currentSongIndex > index) currentSongIndex--;
 
       saveSongs();
     };
@@ -979,6 +1063,8 @@ function renderSongList() {
     list.appendChild(item);
   });
 }
+
+/* YouTube API initialization */
 
 function initializeYouTubePlayer() {
   if (player || !window.YT || !YT.Player) return;
@@ -991,13 +1077,15 @@ function initializeYouTubePlayer() {
       autoplay: 0,
       controls: 1,
       playsinline: 1,
-      rel: 0
+      rel: 0,
+      origin: window.location.origin
     },
     events: {
       onReady: () => {
         playerReady = true;
         $("musicStatus").textContent = "Player ready";
       },
+
       onStateChange: event => {
         if (event.data === YT.PlayerState.PLAYING) {
           musicPlaying = true;
@@ -1016,9 +1104,12 @@ function initializeYouTubePlayer() {
           playNextSong();
         }
       },
-      onError: () => {
+
+      onError: event => {
         musicPlaying = false;
-        $("musicStatus").textContent = "This video cannot be embedded";
+        $("musicStatus").textContent = "Video unavailable or embedding blocked";
+        toast("YouTube couldn't play that video. Try another link.");
+        console.warn("YouTube player error:", event.data);
       }
     }
   });
@@ -1026,16 +1117,16 @@ function initializeYouTubePlayer() {
 
 window.onYouTubeIframeAPIReady = initializeYouTubePlayer;
 
+/* Load player if the API finished before our callback was registered. */
+if (window.YT && window.YT.Player) {
+  initializeYouTubePlayer();
+}
+
 function playSong(index) {
   if (songs.length === 0) {
-    $("musicStatus").textContent = "Add songs to your library first";
-    setStatus("Your music library is empty");
-    return false;
-  }
-
-  if (!playerReady || !player) {
-    $("musicStatus").textContent = "Loading YouTube player...";
-    setStatus("The music player is still loading");
+    $("musicStatus").textContent = "Your library is empty";
+    openMusic();
+    toast("Add a song to your music library first.");
     return false;
   }
 
@@ -1046,8 +1137,14 @@ function playSong(index) {
 
   $("musicTitle").textContent = song.name;
   $("musicSubtitle").textContent = "Song " + (index + 1) + " of " + songs.length;
-  $("musicStatus").textContent = "Loading song...";
+  openMusic();
 
+  if (!playerReady || !player) {
+    $("musicStatus").textContent = "Player is still loading. Try again shortly.";
+    return false;
+  }
+
+  $("musicStatus").textContent = "Loading song...";
   player.loadVideoById(song.id);
   musicPlaying = true;
 
@@ -1056,8 +1153,9 @@ function playSong(index) {
 
 function playRandomSong() {
   if (songs.length === 0) {
+    openMusic();
     $("musicStatus").textContent = "Add songs to your library first";
-    setStatus("Add some YouTube links to your music library first");
+    toast("Your music library is empty.");
     return false;
   }
 
@@ -1071,7 +1169,7 @@ function playRandomSong() {
 }
 
 function playNextSong() {
-  if (songs.length === 0) return;
+  if (!songs.length) return;
 
   const next = currentSongIndex < 0
     ? 0
@@ -1081,7 +1179,7 @@ function playNextSong() {
 }
 
 function playPreviousSong() {
-  if (songs.length === 0) return;
+  if (!songs.length) return;
 
   const previous = currentSongIndex < 0
     ? 0
@@ -1100,20 +1198,23 @@ function pauseMusic() {
 }
 
 function resumeMusic() {
-  if (playerReady && player) {
-    if (currentSongIndex < 0 && songs.length > 0) {
-      playSong(0);
-      return;
-    }
-
-    player.playVideo();
+  if (!playerReady || !player) {
+    openMusic();
+    toast("The YouTube player is still loading.");
+    return;
   }
+
+  if (currentSongIndex < 0) {
+    if (songs.length) playSong(0);
+    else toast("Add a song to your library first.");
+    return;
+  }
+
+  player.playVideo();
 }
 
 function stopMusic() {
-  if (playerReady && player) {
-    player.stopVideo();
-  }
+  if (playerReady && player) player.stopVideo();
 
   musicPlaying = false;
   currentSongIndex = -1;
@@ -1124,68 +1225,105 @@ function stopMusic() {
   $("playPauseSong").textContent = "▶";
 }
 
-/* ---------------- MUSIC VOICE COMMANDS ---------------- */
+/* ---------------- SMART MUSIC COMMANDS ---------------- */
+
+function normalizeSongName(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\b(the|song|music|please|for me|by|play|me)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 function handleMusicCommand(rawText) {
-  const text = rawText.toLowerCase().trim();
+  let text = rawText.toLowerCase().trim();
 
-  const randomCommand =
-    /\b(random song|random music|shuffle|surprise me|play something random|play me a random song)\b/.test(text);
+  text = text.replace(/^hey\s+friend[\s,.:!?-]*/i, "").trim();
 
-  if (randomCommand) {
+  if (!text) return false;
+
+  if (
+    /\b(random song|random music|shuffle|surprise me|play something random)\b/.test(text)
+  ) {
     const success = playRandomSong();
-    if (success) setStatus("Playing a random song", "active");
+    addMessage("assistant", success
+      ? "🎵 Playing a random song from your library!"
+      : "Your music library is empty. Add some YouTube links using the Music button.");
     return true;
   }
 
   if (/\b(skip|next song|next track)\b/.test(text)) {
-    playNextSong();
-    setStatus("Skipping song", "active");
+    if (songs.length) {
+      playNextSong();
+      addMessage("assistant", "⏭ Skipping to the next song.");
+    } else {
+      addMessage("assistant", "Your music library is empty. Add a song first.");
+    }
     return true;
   }
 
   if (/\b(previous song|last song|go back)\b/.test(text)) {
-    playPreviousSong();
-    setStatus("Playing previous song", "active");
+    if (songs.length) {
+      playPreviousSong();
+      addMessage("assistant", "⏮ Going back to the previous song.");
+    } else {
+      addMessage("assistant", "Your music library is empty. Add a song first.");
+    }
     return true;
   }
 
-  if (/\b(pause music|pause the music|pause song|pause the song|stop the music)\b/.test(text)) {
+  if (/\b(pause music|pause the music|pause song|pause the song)\b/.test(text)) {
     pauseMusic();
-    setStatus("Music paused");
+    addMessage("assistant", "⏸ Music paused.");
     return true;
   }
 
   if (/\b(resume music|resume the music|continue music|continue playing|unpause)\b/.test(text)) {
     resumeMusic();
-    setStatus("Resuming music", "active");
+    addMessage("assistant", "▶ Resuming music.");
     return true;
   }
 
-  if (/\b(stop music completely|stop music|turn off music)\b/.test(text)) {
+  if (/\b(stop music|stop the music|turn off music)\b/.test(text)) {
     stopMusic();
-    setStatus("Music stopped");
+    addMessage("assistant", "Music stopped.");
     return true;
   }
 
-  const playMatch = text.match(/^play\s+(.+)$/);
+  const playMatch = text.match(/^(?:please\s+)?play\s+(.+)$/i);
 
   if (playMatch) {
-    const requested = playMatch[1]
-      .replace(/\b(song|music|please|for me)\b/g, "")
-      .trim();
+    const requested = normalizeSongName(playMatch[1]);
 
-    if (requested) {
-      const index = songs.findIndex(song =>
-        song.name.toLowerCase().includes(requested)
-      );
-
-      if (index !== -1) {
-        playSong(index);
-        setStatus("Playing " + songs[index].name, "active");
-        return true;
-      }
+    if (!requested) {
+      addMessage("assistant", "Which song would you like me to play?");
+      return true;
     }
+
+    const index = songs.findIndex(song => {
+      const name = normalizeSongName(song.name);
+      return name === requested ||
+        name.includes(requested) ||
+        requested.includes(name);
+    });
+
+    if (index !== -1) {
+      playSong(index);
+      addMessage("assistant", "🎵 Playing **" + songs[index].name + "**!");
+      return true;
+    }
+
+    openMusic();
+    $("musicStatus").textContent = "Song not found in your library";
+
+    addMessage(
+      "assistant",
+      "I couldn't find **" + playMatch[1].trim() +
+      "** in your music library. Add its YouTube link in the Music panel, then ask me again!"
+    );
+
+    return true;
   }
 
   return false;
@@ -1232,25 +1370,31 @@ Do not invent data.
 `.trim();
 }
 
+function explainFetchError(error) {
+  if (error instanceof TypeError && /fetch/i.test(error.message)) {
+    return "Couldn't connect to Groq. Check your internet connection, API key, and browser network restrictions. If this is on GitHub Pages, a Cloudflare Worker proxy is a more reliable way to connect.";
+  }
+
+  return error.message || "An unknown error occurred.";
+}
+
 async function sendMessage(rawText) {
   const text = rawText.trim();
   if (!text || busy) return;
 
-  // Handle music commands locally before asking the AI.
-  if (handleMusicCommand(text)) {
-    addMessage("user", text);
-    addMessage("assistant", "🎵 " + $("musicStatus").textContent + ".");
-    return;
-  }
+  $("messageInput").value = "";
+
+  addMessage("user", text);
+
+  // Music commands are handled locally. They don't need a Groq API key.
+  if (handleMusicCommand(text)) return;
 
   if (!apiKey) {
     $("settingsModal").classList.add("show");
     setStatus("Add your Groq API key in Settings");
+    addMessage("assistant", "I need a Groq API key before I can answer that. Open Settings to add it.");
     return;
   }
-
-  $("messageInput").value = "";
-  addMessage("user", text);
 
   conversation.push({ role: "user", content: text });
 
@@ -1295,9 +1439,8 @@ async function sendMessage(rawText) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error?.message || "Groq error: " + response.status
-      );
+      const details = errorData.error?.message || "HTTP " + response.status;
+      throw new Error(details);
     }
 
     if (!response.body) {
@@ -1335,6 +1478,10 @@ async function sendMessage(rawText) {
           parsed = JSON.parse(data);
         } catch {
           continue;
+        }
+
+        if (parsed.error) {
+          throw new Error(parsed.error.message || "Groq streaming error.");
         }
 
         const token = parsed.choices?.[0]?.delta?.content;
@@ -1377,8 +1524,9 @@ async function sendMessage(rawText) {
     if (error.name === "AbortError") {
       assistantBox.textContent = "Response stopped.";
     } else {
-      assistantBox.textContent = "Something went wrong: " + error.message;
-      console.error(error);
+      const explanation = explainFetchError(error);
+      assistantBox.textContent = "⚠ " + explanation;
+      console.error("Hey Friend error:", error);
     }
   } finally {
     busy = false;
@@ -1405,10 +1553,11 @@ let shouldListen = false;
 let phase = "wake";
 let commandBuffer = "";
 let commandTimer = null;
+let restartTimer = null;
 
 function initializeRecognition() {
   if (!SpeechRecognition) {
-    setStatus("Speech recognition is not supported in this browser");
+    setStatus("Voice recognition is not supported in this browser");
     return;
   }
 
@@ -1422,12 +1571,12 @@ function initializeRecognition() {
 
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const result = event.results[i];
-      if (!result.isFinal) continue;
-
       const transcript = result[0].transcript.trim();
 
+      if (!result.isFinal) continue;
+
       if (phase === "wake") {
-        const match = transcript.match(/hey\s+friend/i);
+        const match = transcript.match(/hey[\s,.-]*friend/i);
 
         if (match) {
           const remainder = transcript
@@ -1437,15 +1586,14 @@ function initializeRecognition() {
             .trim();
 
           phase = "command";
+          commandBuffer = remainder;
+
           setStatus("I'm listening...", "active");
 
-          if (remainder) {
-            commandBuffer = remainder;
-            scheduleCommand();
-          }
+          if (remainder) scheduleCommand();
         }
       } else if (phase === "command") {
-        commandBuffer += " " + transcript;
+        commandBuffer += (commandBuffer ? " " : "") + transcript;
         scheduleCommand();
       }
     }
@@ -1455,17 +1603,29 @@ function initializeRecognition() {
     if (event.error === "not-allowed" ||
         event.error === "service-not-allowed") {
       shouldListen = false;
-      setStatus("Microphone permission was denied");
+      setStatus("Microphone permission denied");
+      toast("Allow microphone access in your browser settings.");
       return;
     }
 
-    if (event.error !== "no-speech" && event.error !== "aborted") {
-      setStatus("Voice recognition error: " + event.error);
+    if (event.error === "audio-capture") {
+      shouldListen = false;
+      setStatus("No microphone was found");
+      return;
+    }
+
+    if (event.error === "network") {
+      setStatus("Voice recognition network error");
+    } else if (event.error !== "no-speech" && event.error !== "aborted") {
+      setStatus("Voice error: " + event.error);
     }
   };
 
   recognition.onend = () => {
-    if (shouldListen && !busy) restartRecognition();
+    if (shouldListen && !busy) {
+      clearTimeout(restartTimer);
+      restartTimer = setTimeout(restartRecognition, 300);
+    }
   };
 }
 
@@ -1479,8 +1639,11 @@ function scheduleCommand() {
       commandBuffer = "";
       phase = "wake";
       sendMessage(command);
+    } else {
+      phase = "wake";
+      setStatus("Listening for Hey Friend...", "active");
     }
-  }, 850);
+  }, 1100);
 }
 
 function restartRecognition() {
@@ -1488,12 +1651,15 @@ function restartRecognition() {
 
   try {
     recognition.start();
-  } catch {}
+  } catch (error) {
+    // Recognition may already be starting.
+  }
 }
 
 function startListening() {
   if (!SpeechRecognition) {
     setStatus("Use Chrome or Edge for voice recognition");
+    toast("Voice recognition works best in Chrome or Edge.");
     return;
   }
 
@@ -1505,6 +1671,7 @@ function startListening() {
   phase = "wake";
   commandBuffer = "";
 
+  clearTimeout(restartTimer);
   setStatus("Listening for Hey Friend...", "active");
   restartRecognition();
 }
@@ -1512,6 +1679,7 @@ function startListening() {
 function stopListening() {
   shouldListen = false;
   clearTimeout(commandTimer);
+  clearTimeout(restartTimer);
   commandBuffer = "";
   phase = "wake";
 
@@ -1528,6 +1696,8 @@ function stopListening() {
 /* ---------------- SETTINGS ---------------- */
 
 function loadVoices() {
+  if (!("speechSynthesis" in window)) return;
+
   const voices = speechSynthesis.getVoices();
   const select = $("voiceSelect");
   const previous = select.value;
@@ -1546,8 +1716,10 @@ function loadVoices() {
   }
 }
 
-speechSynthesis.onvoiceschanged = loadVoices;
-loadVoices();
+if ("speechSynthesis" in window) {
+  speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices();
+}
 
 $("settingsButton").onclick = () => {
   $("settingsModal").classList.add("show");
@@ -1560,6 +1732,7 @@ $("closeSettings").onclick = () => {
 $("saveSettings").onclick = () => {
   apiKey = $("apiKey").value.trim();
   $("settingsModal").classList.remove("show");
+
   setStatus(apiKey ? "Settings saved" : "Add your Groq API key to begin");
 };
 
@@ -1570,7 +1743,15 @@ $("speechSpeed").oninput = () => {
 
 /* ---------------- BUTTON EVENTS ---------------- */
 
+$("musicButton").onclick = openMusic;
+$("closeMusic").onclick = closeMusic;
+
+$("musicBackdrop").addEventListener("click", event => {
+  if (event.target === $("musicBackdrop")) closeMusic();
+});
+
 $("addSong").onclick = addSong;
+
 $("songUrl").addEventListener("keydown", event => {
   if (event.key === "Enter") addSong();
 });
@@ -1622,6 +1803,10 @@ renderSongList();
 if (!SpeechRecognition) {
   setStatus("Voice recognition works best in Chrome or Edge");
 }
+
 </script>
+
+<!-- Load YouTube API after the page's callback has been defined. -->
+<script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
