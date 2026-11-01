@@ -1,0 +1,1627 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hey Friend AI</title>
+
+<script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+  startup: { typeset: false }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+:root {
+  --bg: #090d18;
+  --panel: #111827;
+  --panel2: #182235;
+  --border: #26344b;
+  --text: #edf3ff;
+  --muted: #8d9bb2;
+  --accent: #7c6cff;
+  --accent2: #36c8ff;
+  --green: #43d9a3;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, Arial, sans-serif;
+  min-height: 100vh;
+}
+
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+
+.app {
+  width: min(1050px, 100%);
+  margin: auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 0 18px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  width: 45px;
+  height: 45px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: grid;
+  place-items: center;
+  font-size: 23px;
+  box-shadow: 0 0 25px #766aff44;
+}
+
+.brand h1 { font-size: 20px; margin: 0; }
+.brand p { margin: 3px 0 0; font-size: 12px; color: var(--muted); }
+
+.settings-button, .control-button {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 13px;
+  margin: 18px 0;
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #65738b;
+}
+
+.status-dot.active {
+  background: var(--green);
+  box-shadow: 0 0 12px var(--green);
+}
+
+.status-dot.thinking {
+  background: #f5bc55;
+  box-shadow: 0 0 12px #f5bc55;
+}
+
+.chat {
+  flex: 1;
+  min-height: 300px;
+  padding: 8px 0 25px;
+}
+
+.message {
+  display: flex;
+  gap: 12px;
+  margin: 20px 0;
+  animation: appear .2s ease;
+}
+
+@keyframes appear {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: var(--panel2);
+}
+
+.message.user .avatar { background: #293c64; }
+.message-body { min-width: 0; max-width: 85%; }
+.message-name { font-size: 12px; color: var(--muted); margin-bottom: 7px; }
+.message-content { line-height: 1.65; overflow-wrap: anywhere; }
+.message-content p:first-child { margin-top: 0; }
+.message-content p:last-child { margin-bottom: 0; }
+
+.message-content h1,
+.message-content h2,
+.message-content h3 {
+  line-height: 1.3;
+  margin: 18px 0 10px;
+}
+
+.message-content h1 { font-size: 24px; }
+.message-content h2 { font-size: 20px; }
+.message-content h3 { font-size: 17px; }
+.message-content strong { color: white; }
+.message-content em { color: #c4bcff; }
+.message-content a { color: #7bd5ff; }
+
+.message-content ul,
+.message-content ol { padding-left: 24px; }
+
+.message-content blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 5px 14px;
+  margin: 12px 0;
+  color: #b9c5dc;
+  background: #ffffff08;
+}
+
+.message-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 15px 0;
+  font-size: 14px;
+}
+
+.message-content th,
+.message-content td {
+  border: 1px solid var(--border);
+  padding: 9px 12px;
+  text-align: left;
+}
+
+.message-content th { background: var(--panel2); }
+
+.message-content pre {
+  overflow-x: auto;
+  background: #080c15;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 15px;
+}
+
+.message-content code {
+  font-family: Consolas, monospace;
+  font-size: .9em;
+}
+
+.message-content :not(pre) > code {
+  background: #252d43;
+  padding: 3px 6px;
+  border-radius: 5px;
+}
+
+.chart-wrap {
+  background: #101827;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 15px 0;
+  width: 100%;
+  min-height: 250px;
+}
+
+.chart-wrap canvas { max-height: 350px; }
+
+.composer {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(transparent, var(--bg) 20%);
+  padding: 15px 0 8px;
+}
+
+.input-row {
+  display: flex;
+  gap: 9px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 9px;
+  border-radius: 14px;
+}
+
+.input-row input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: white;
+  padding: 8px;
+}
+
+.send-button {
+  border: 0;
+  border-radius: 10px;
+  color: white;
+  background: var(--accent);
+  padding: 10px 17px;
+  font-weight: 600;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 13px;
+}
+
+.control-button.primary {
+  background: linear-gradient(110deg, #6959e8, #398bdb);
+  border: 0;
+}
+
+.control-button.stop { color: #ff8c9c; }
+
+.hint {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+  margin-top: 12px;
+}
+
+/* MUSIC PLAYER */
+
+.music-panel {
+  background: linear-gradient(135deg, #171d36, #111827);
+  border: 1px solid #34385f;
+  border-radius: 16px;
+  padding: 17px;
+  margin: 5px 0 20px;
+}
+
+.music-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 13px;
+}
+
+.music-heading h2 {
+  font-size: 16px;
+  margin: 0;
+}
+
+.music-heading span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.music-screen {
+  background: #080c15;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+}
+
+#youtubePlayer {
+  width: 100%;
+  height: 100%;
+}
+
+.music-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin: 13px 0;
+}
+
+.music-title {
+  font-weight: 650;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.music-subtitle {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.music-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.music-controls button {
+  background: #252b45;
+  color: white;
+  border: 1px solid #3a4160;
+  border-radius: 10px;
+  min-width: 43px;
+  padding: 10px 14px;
+}
+
+.music-controls button.play {
+  background: var(--accent);
+  border-color: var(--accent);
+  min-width: 55px;
+  font-size: 17px;
+}
+
+.library {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.library-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.library-top strong { font-size: 13px; }
+.library-top span { font-size: 11px; color: var(--muted); }
+
+.add-song {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.add-song input {
+  flex: 1;
+  min-width: 130px;
+  background: #090f1c;
+  border: 1px solid var(--border);
+  color: white;
+  border-radius: 9px;
+  padding: 10px;
+  outline: none;
+}
+
+.add-song button {
+  background: #30375a;
+  color: white;
+  border: 0;
+  border-radius: 9px;
+  padding: 10px 14px;
+}
+
+.song-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.song-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff08;
+  border: 1px solid #ffffff0c;
+  padding: 9px;
+  border-radius: 9px;
+  min-width: 0;
+}
+
+.song-name {
+  flex: 1;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.song-item button {
+  border: 0;
+  background: #ffffff12;
+  color: white;
+  border-radius: 7px;
+  padding: 7px 9px;
+}
+
+.song-item .delete-song { color: #ff8c9c; }
+
+.empty-library {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 8px 0;
+  line-height: 1.5;
+}
+
+.small-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 10px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #000b;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 10;
+}
+
+.modal-backdrop.show { display: flex; }
+
+.modal {
+  width: min(480px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+}
+
+.modal h2 { margin-top: 0; }
+.field { margin: 16px 0; }
+
+.field label {
+  display: block;
+  color: #b6c2d7;
+  font-size: 13px;
+  margin-bottom: 7px;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  background: #090f1c;
+  color: white;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 11px;
+  outline: none;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+@media(max-width: 600px) {
+  .app { padding: 13px; }
+  .message-body { max-width: 90%; }
+  .message-content table { font-size: 12px; }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<header>
+  <div class="brand">
+    <div class="logo">✦</div>
+    <div>
+      <h1>Hey Friend</h1>
+      <p>Your personal AI voice assistant</p>
+    </div>
+  </div>
+  <button class="settings-button" id="settingsButton">⚙ Settings</button>
+</header>
+
+<div class="status">
+  <span class="status-dot" id="statusDot"></span>
+  <span id="statusText">Ready when you are</span>
+</div>
+
+<!-- MUSIC PLAYER -->
+<section class="music-panel">
+  <div class="music-heading">
+    <h2>🎵 Hey Friend Music</h2>
+    <span id="musicStatus">Ready to play</span>
+  </div>
+
+  <div class="music-screen">
+    <div id="youtubePlayer"></div>
+  </div>
+
+  <div class="music-info">
+    <div>
+      <div class="music-title" id="musicTitle">Nothing playing</div>
+      <div class="music-subtitle" id="musicSubtitle">Add songs to your library below</div>
+    </div>
+  </div>
+
+  <div class="music-controls">
+    <button id="previousSong" title="Previous song">⏮</button>
+    <button class="play" id="playPauseSong" title="Play or pause">▶</button>
+    <button id="nextSong" title="Next song">⏭</button>
+    <button id="shuffleSong" title="Random song">🔀</button>
+  </div>
+
+  <div class="library">
+    <div class="library-top">
+      <strong>Your music library</strong>
+      <span id="songCount">0 songs</span>
+    </div>
+
+    <div class="add-song">
+      <input id="songUrl" placeholder="Paste a YouTube video link">
+      <input id="songName" placeholder="Song name (optional)">
+      <button id="addSong">+ Add</button>
+    </div>
+
+    <div class="song-list" id="songList"></div>
+
+    <div class="small-note">
+      Add regular YouTube video links. Some videos may not allow embedding.
+      Songs are saved in this browser.
+    </div>
+  </div>
+</section>
+
+<main class="chat" id="chat">
+  <div class="message assistant">
+    <div class="avatar">✦</div>
+    <div class="message-body">
+      <div class="message-name">Hey Friend</div>
+      <div class="message-content">
+        Hey! I'm ready to help. Say **"Hey Friend"** to wake me up, or type a message below. 😊
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="composer">
+  <div class="input-row">
+    <input id="messageInput" placeholder="Ask Hey Friend anything..." autocomplete="off">
+    <button class="send-button" id="sendButton">Send ➜</button>
+  </div>
+
+  <div class="controls">
+    <button class="control-button primary" id="startButton">🎤 Start Listening</button>
+    <button class="control-button stop" id="stopButton">■ Stop</button>
+    <button class="control-button" id="clearButton">Clear Chat</button>
+  </div>
+
+  <div class="hint">
+    Say "Hey Friend" to activate voice commands.
+  </div>
+</div>
+
+</div>
+
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal">
+    <h2>⚙ Hey Friend Settings</h2>
+
+    <div class="field">
+      <label for="apiKey">Groq API Key</label>
+      <input type="password" id="apiKey" placeholder="gsk_...">
+    </div>
+
+    <div class="field">
+      <label for="model">Groq Model</label>
+      <input id="model" value="openai/gpt-oss-20b">
+    </div>
+
+    <div class="field">
+      <label for="personality">Personality</label>
+      <select id="personality">
+        <option value="friendly and helpful">Friendly</option>
+        <option value="funny, casual, and witty">Funny</option>
+        <option value="professional, clear, and concise">Professional</option>
+        <option value="curious, energetic, and creative">Energetic</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="voiceSelect">Speaking Voice</label>
+      <select id="voiceSelect"></select>
+    </div>
+
+    <div class="field">
+      <label for="speechSpeed">Speaking Speed: <span id="speedValue">1.0x</span></label>
+      <input type="range" id="speechSpeed" min="0.7" max="1.5" step="0.1" value="1">
+    </div>
+
+    <div class="field">
+      <label>
+        <input type="checkbox" id="speechEnabled" checked style="width:auto">
+        Speak AI responses aloud
+      </label>
+    </div>
+
+    <p class="small-note">
+      For a public website, protect your Groq API key using a Cloudflare Worker.
+      Do not publish your key in your HTML.
+    </p>
+
+    <div class="modal-actions">
+      <button class="control-button" id="closeSettings">Cancel</button>
+      <button class="send-button" id="saveSettings">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+/* ---------------- AI SETTINGS ---------------- */
+
+let apiKey = "";
+let conversation = [];
+let busy = false;
+let abortController = null;
+
+const chat = $("chat");
+const statusDot = $("statusDot");
+const statusText = $("statusText");
+
+function setStatus(text, state = "") {
+  statusText.textContent = text;
+  statusDot.className = "status-dot " + state;
+}
+
+function scrollToBottom() {
+  window.scrollTo({
+    top: document.body.scrollHeight,
+    behavior: "smooth"
+  });
+}
+
+/* ---------------- MARKDOWN AND CHARTS ---------------- */
+
+const md = window.markdownit({
+  html: false,
+  linkify: true,
+  breaks: true
+});
+
+let chartCounter = 0;
+
+md.renderer.rules.fence = function(tokens, idx) {
+  const token = tokens[idx];
+  const info = (token.info || "").trim();
+
+  if (info.startsWith("chart")) {
+    chartCounter++;
+    const id = "chart-" + chartCounter;
+    const config = token.content.trim();
+
+    return `<div class="chart-wrap">
+      <canvas id="${id}" data-chart="${md.utils.escapeHtml(config).replace(/"/g, "&quot;")}"></canvas>
+    </div>`;
+  }
+
+  return `<pre><code>${md.utils.escapeHtml(token.content)}</code></pre>`;
+};
+
+function renderMarkdown(source, container) {
+  container.innerHTML = DOMPurify.sanitize(md.render(source), {
+    ADD_ATTR: ["data-chart"]
+  });
+
+  container.querySelectorAll("a").forEach(link => {
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+  });
+
+  container.querySelectorAll("canvas[data-chart]").forEach(canvas => {
+    try {
+      const config = JSON.parse(canvas.dataset.chart);
+      const allowed = ["bar", "line", "pie", "doughnut", "polarArea", "radar"];
+
+      if (!allowed.includes(config.type)) throw new Error("Unsupported chart");
+
+      new Chart(canvas, config);
+    } catch (error) {
+      const message = document.createElement("p");
+      message.textContent = "Chart could not be displayed.";
+      canvas.replaceWith(message);
+      console.warn(error);
+    }
+  });
+
+  if (window.MathJax?.typesetPromise) {
+    MathJax.typesetPromise([container]).catch(console.warn);
+  }
+}
+
+function addMessage(role, content = "", streaming = false) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "message " + role;
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.textContent = role === "user" ? "👤" : "✦";
+
+  const body = document.createElement("div");
+  body.className = "message-body";
+
+  const name = document.createElement("div");
+  name.className = "message-name";
+  name.textContent = role === "user" ? "You" : "Hey Friend";
+
+  const contentBox = document.createElement("div");
+  contentBox.className = "message-content";
+
+  if (streaming) contentBox.textContent = content;
+  else renderMarkdown(content, contentBox);
+
+  body.append(name, contentBox);
+  wrapper.append(avatar, body);
+  chat.appendChild(wrapper);
+
+  scrollToBottom();
+  return contentBox;
+}
+
+/* ---------------- SPEECH ---------------- */
+
+function cleanSpeechText(text) {
+  return text
+    .replace(/[\p{Extended_Pictographic}\p{Emoji_Component}\p{Regional_Indicator}\uFE0F\u200D]/gu, "")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[#*_~>|]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+let speechPending = 0;
+let speechWaiters = [];
+let speechCancelled = false;
+
+function queueSpeech(text) {
+  if (!$("speechEnabled").checked || speechCancelled) return;
+
+  const clean = cleanSpeechText(text);
+  if (!clean) return;
+
+  const utterance = new SpeechSynthesisUtterance(clean);
+  const voices = speechSynthesis.getVoices();
+  const selected = $("voiceSelect").value;
+
+  utterance.voice = voices.find(v => v.name === selected) || null;
+  utterance.rate = Number($("speechSpeed").value);
+
+  speechPending++;
+
+  const finish = () => {
+    speechPending = Math.max(0, speechPending - 1);
+
+    if (speechPending === 0) {
+      speechWaiters.forEach(resolve => resolve());
+      speechWaiters = [];
+    }
+  };
+
+  utterance.onend = finish;
+  utterance.onerror = finish;
+
+  speechSynthesis.speak(utterance);
+}
+
+function waitForSpeech() {
+  if (speechPending === 0) return Promise.resolve();
+
+  return new Promise(resolve => speechWaiters.push(resolve));
+}
+
+function cancelSpeech() {
+  speechSynthesis.cancel();
+  speechPending = 0;
+  speechWaiters.forEach(resolve => resolve());
+  speechWaiters = [];
+}
+
+function createSpeechSentences(buffer, flush = false) {
+  const sentences = [];
+
+  while (true) {
+    const match = buffer.match(/^([\s\S]*?[.!?])(?:\s+|$)/);
+    if (!match) break;
+
+    if (match[1].trim()) sentences.push(match[1].trim());
+    buffer = buffer.slice(match[0].length);
+  }
+
+  if (flush && buffer.trim()) {
+    sentences.push(buffer.trim());
+    buffer = "";
+  }
+
+  return { sentences, remaining: buffer };
+}
+
+/* ---------------- MUSIC LIBRARY ---------------- */
+
+let songs = [];
+
+try {
+  songs = JSON.parse(localStorage.getItem("heyFriendSongs") || "[]");
+  if (!Array.isArray(songs)) songs = [];
+} catch {
+  songs = [];
+}
+
+let currentSongIndex = -1;
+let player = null;
+let playerReady = false;
+let musicPlaying = false;
+
+function saveSongs() {
+  localStorage.setItem("heyFriendSongs", JSON.stringify(songs));
+  renderSongList();
+}
+
+function extractYouTubeId(value) {
+  try {
+    const url = new URL(value.trim());
+
+    if (url.hostname === "youtu.be") {
+      return url.pathname.split("/")[1] || null;
+    }
+
+    if (
+      url.hostname.includes("youtube.com") ||
+      url.hostname.includes("youtube-nocookie.com")
+    ) {
+      if (url.pathname === "/watch") {
+        return url.searchParams.get("v");
+      }
+
+      const parts = url.pathname.split("/").filter(Boolean);
+
+      if (["embed", "shorts", "live"].includes(parts[0])) {
+        return parts[1] || null;
+      }
+    }
+  } catch {}
+
+  return null;
+}
+
+function addSong() {
+  const url = $("songUrl").value.trim();
+  const name = $("songName").value.trim();
+  const id = extractYouTubeId(url);
+
+  if (!id || !/^[a-zA-Z0-9_-]{11}$/.test(id)) {
+    alert("Please paste a valid YouTube video link.");
+    return;
+  }
+
+  if (songs.some(song => song.id === id)) {
+    alert("That song is already in your library.");
+    return;
+  }
+
+  songs.push({
+    id,
+    name: name || "YouTube video"
+  });
+
+  $("songUrl").value = "";
+  $("songName").value = "";
+
+  saveSongs();
+  $("musicStatus").textContent = "Song added!";
+}
+
+function renderSongList() {
+  const list = $("songList");
+  list.innerHTML = "";
+
+  $("songCount").textContent =
+    songs.length + (songs.length === 1 ? " song" : " songs");
+
+  if (songs.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty-library";
+    empty.textContent = "Your library is empty. Paste a YouTube link above to add your first song.";
+    list.appendChild(empty);
+    return;
+  }
+
+  songs.forEach((song, index) => {
+    const item = document.createElement("div");
+    item.className = "song-item";
+
+    const name = document.createElement("div");
+    name.className = "song-name";
+    name.textContent = (index + 1) + ". " + song.name;
+
+    const play = document.createElement("button");
+    play.textContent = "▶";
+    play.title = "Play song";
+    play.onclick = () => playSong(index);
+
+    const remove = document.createElement("button");
+    remove.textContent = "✕";
+    remove.className = "delete-song";
+    remove.title = "Remove song";
+    remove.onclick = () => {
+      songs.splice(index, 1);
+
+      if (currentSongIndex === index) {
+        stopMusic();
+      } else if (currentSongIndex > index) {
+        currentSongIndex--;
+      }
+
+      saveSongs();
+    };
+
+    item.append(name, play, remove);
+    list.appendChild(item);
+  });
+}
+
+function initializeYouTubePlayer() {
+  if (player || !window.YT || !YT.Player) return;
+
+  player = new YT.Player("youtubePlayer", {
+    width: "100%",
+    height: "100%",
+    videoId: "",
+    playerVars: {
+      autoplay: 0,
+      controls: 1,
+      playsinline: 1,
+      rel: 0
+    },
+    events: {
+      onReady: () => {
+        playerReady = true;
+        $("musicStatus").textContent = "Player ready";
+      },
+      onStateChange: event => {
+        if (event.data === YT.PlayerState.PLAYING) {
+          musicPlaying = true;
+          $("musicStatus").textContent = "Playing";
+          $("playPauseSong").textContent = "Ⅱ";
+        }
+
+        if (event.data === YT.PlayerState.PAUSED) {
+          musicPlaying = false;
+          $("musicStatus").textContent = "Paused";
+          $("playPauseSong").textContent = "▶";
+        }
+
+        if (event.data === YT.PlayerState.ENDED) {
+          musicPlaying = false;
+          playNextSong();
+        }
+      },
+      onError: () => {
+        musicPlaying = false;
+        $("musicStatus").textContent = "This video cannot be embedded";
+      }
+    }
+  });
+}
+
+window.onYouTubeIframeAPIReady = initializeYouTubePlayer;
+
+function playSong(index) {
+  if (songs.length === 0) {
+    $("musicStatus").textContent = "Add songs to your library first";
+    setStatus("Your music library is empty");
+    return false;
+  }
+
+  if (!playerReady || !player) {
+    $("musicStatus").textContent = "Loading YouTube player...";
+    setStatus("The music player is still loading");
+    return false;
+  }
+
+  index = (index + songs.length) % songs.length;
+  currentSongIndex = index;
+
+  const song = songs[index];
+
+  $("musicTitle").textContent = song.name;
+  $("musicSubtitle").textContent = "Song " + (index + 1) + " of " + songs.length;
+  $("musicStatus").textContent = "Loading song...";
+
+  player.loadVideoById(song.id);
+  musicPlaying = true;
+
+  return true;
+}
+
+function playRandomSong() {
+  if (songs.length === 0) {
+    $("musicStatus").textContent = "Add songs to your library first";
+    setStatus("Add some YouTube links to your music library first");
+    return false;
+  }
+
+  let index = Math.floor(Math.random() * songs.length);
+
+  if (songs.length > 1 && index === currentSongIndex) {
+    index = (index + 1) % songs.length;
+  }
+
+  return playSong(index);
+}
+
+function playNextSong() {
+  if (songs.length === 0) return;
+
+  const next = currentSongIndex < 0
+    ? 0
+    : (currentSongIndex + 1) % songs.length;
+
+  playSong(next);
+}
+
+function playPreviousSong() {
+  if (songs.length === 0) return;
+
+  const previous = currentSongIndex < 0
+    ? 0
+    : (currentSongIndex - 1 + songs.length) % songs.length;
+
+  playSong(previous);
+}
+
+function pauseMusic() {
+  if (playerReady && player) {
+    player.pauseVideo();
+    musicPlaying = false;
+    $("musicStatus").textContent = "Paused";
+    $("playPauseSong").textContent = "▶";
+  }
+}
+
+function resumeMusic() {
+  if (playerReady && player) {
+    if (currentSongIndex < 0 && songs.length > 0) {
+      playSong(0);
+      return;
+    }
+
+    player.playVideo();
+  }
+}
+
+function stopMusic() {
+  if (playerReady && player) {
+    player.stopVideo();
+  }
+
+  musicPlaying = false;
+  currentSongIndex = -1;
+
+  $("musicTitle").textContent = "Nothing playing";
+  $("musicSubtitle").textContent = "Choose a song from your library";
+  $("musicStatus").textContent = "Stopped";
+  $("playPauseSong").textContent = "▶";
+}
+
+/* ---------------- MUSIC VOICE COMMANDS ---------------- */
+
+function handleMusicCommand(rawText) {
+  const text = rawText.toLowerCase().trim();
+
+  const randomCommand =
+    /\b(random song|random music|shuffle|surprise me|play something random|play me a random song)\b/.test(text);
+
+  if (randomCommand) {
+    const success = playRandomSong();
+    if (success) setStatus("Playing a random song", "active");
+    return true;
+  }
+
+  if (/\b(skip|next song|next track)\b/.test(text)) {
+    playNextSong();
+    setStatus("Skipping song", "active");
+    return true;
+  }
+
+  if (/\b(previous song|last song|go back)\b/.test(text)) {
+    playPreviousSong();
+    setStatus("Playing previous song", "active");
+    return true;
+  }
+
+  if (/\b(pause music|pause the music|pause song|pause the song|stop the music)\b/.test(text)) {
+    pauseMusic();
+    setStatus("Music paused");
+    return true;
+  }
+
+  if (/\b(resume music|resume the music|continue music|continue playing|unpause)\b/.test(text)) {
+    resumeMusic();
+    setStatus("Resuming music", "active");
+    return true;
+  }
+
+  if (/\b(stop music completely|stop music|turn off music)\b/.test(text)) {
+    stopMusic();
+    setStatus("Music stopped");
+    return true;
+  }
+
+  const playMatch = text.match(/^play\s+(.+)$/);
+
+  if (playMatch) {
+    const requested = playMatch[1]
+      .replace(/\b(song|music|please|for me)\b/g, "")
+      .trim();
+
+    if (requested) {
+      const index = songs.findIndex(song =>
+        song.name.toLowerCase().includes(requested)
+      );
+
+      if (index !== -1) {
+        playSong(index);
+        setStatus("Playing " + songs[index].name, "active");
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/* ---------------- AI ---------------- */
+
+function getSystemPrompt() {
+  return `
+You are Hey Friend, a friendly voice assistant.
+Your personality is ${$("personality").value}.
+
+Be conversational, useful, and clear.
+Keep spoken answers reasonably concise unless the user asks for detail.
+
+Use Markdown when useful:
+- **Bold** for important words.
+- *Italic* for emphasis.
+- Headings, bullet lists, tables, and code blocks.
+- LaTeX for mathematical equations.
+
+When a graph genuinely helps, create a Chart.js chart using this format:
+
+\`\`\`chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["A", "B", "C"],
+    "datasets": [{
+      "label": "Example",
+      "data": [10, 20, 15]
+    }]
+  },
+  "options": {
+    "responsive": true,
+    "maintainAspectRatio": true
+  }
+}
+\`\`\`
+
+Supported chart types: bar, line, pie, doughnut, polarArea, radar.
+The chart block must contain valid JSON.
+Do not invent data.
+`.trim();
+}
+
+async function sendMessage(rawText) {
+  const text = rawText.trim();
+  if (!text || busy) return;
+
+  // Handle music commands locally before asking the AI.
+  if (handleMusicCommand(text)) {
+    addMessage("user", text);
+    addMessage("assistant", "🎵 " + $("musicStatus").textContent + ".");
+    return;
+  }
+
+  if (!apiKey) {
+    $("settingsModal").classList.add("show");
+    setStatus("Add your Groq API key in Settings");
+    return;
+  }
+
+  $("messageInput").value = "";
+  addMessage("user", text);
+
+  conversation.push({ role: "user", content: text });
+
+  if (conversation.length > 20) {
+    conversation = conversation.slice(-20);
+  }
+
+  busy = true;
+  speechCancelled = false;
+
+  if (recognition) {
+    try { recognition.stop(); } catch {}
+  }
+
+  setStatus("Thinking...", "thinking");
+
+  const assistantBox = addMessage("assistant", "Thinking...", true);
+  abortController = new AbortController();
+
+  try {
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + apiKey
+        },
+        body: JSON.stringify({
+          model: $("model").value.trim(),
+          messages: [
+            { role: "system", content: getSystemPrompt() },
+            ...conversation
+          ],
+          max_completion_tokens: 1200,
+          temperature: 0.7,
+          stream: true
+        }),
+        signal: abortController.signal
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error?.message || "Groq error: " + response.status
+      );
+    }
+
+    if (!response.body) {
+      throw new Error("Streaming is not supported in this browser.");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    let fullText = "";
+    let sseBuffer = "";
+    let speechBuffer = "";
+
+    setStatus("Hey Friend is responding...", "thinking");
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      sseBuffer += decoder.decode(value, { stream: true });
+
+      const lines = sseBuffer.split("\n");
+      sseBuffer = lines.pop() || "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+
+        const data = trimmed.slice(5).trim();
+        if (data === "[DONE]") continue;
+
+        let parsed;
+
+        try {
+          parsed = JSON.parse(data);
+        } catch {
+          continue;
+        }
+
+        const token = parsed.choices?.[0]?.delta?.content;
+
+        if (typeof token !== "string" || !token) continue;
+
+        fullText += token;
+        assistantBox.textContent = fullText;
+        scrollToBottom();
+
+        if ($("speechEnabled").checked && !speechCancelled) {
+          speechBuffer += token;
+
+          const result = createSpeechSentences(speechBuffer);
+          speechBuffer = result.remaining;
+
+          result.sentences.forEach(queueSpeech);
+        }
+      }
+    }
+
+    if ($("speechEnabled").checked && !speechCancelled) {
+      const result = createSpeechSentences(speechBuffer, true);
+      result.sentences.forEach(queueSpeech);
+    }
+
+    if (!fullText.trim()) {
+      throw new Error("The AI returned an empty response.");
+    }
+
+    conversation.push({ role: "assistant", content: fullText });
+
+    renderMarkdown(fullText, assistantBox);
+    scrollToBottom();
+
+    setStatus("Response complete", "active");
+    await waitForSpeech();
+
+  } catch (error) {
+    if (error.name === "AbortError") {
+      assistantBox.textContent = "Response stopped.";
+    } else {
+      assistantBox.textContent = "Something went wrong: " + error.message;
+      console.error(error);
+    }
+  } finally {
+    busy = false;
+    abortController = null;
+
+    if (shouldListen) {
+      phase = "wake";
+      commandBuffer = "";
+      setStatus("Listening for Hey Friend...", "active");
+      restartRecognition();
+    } else {
+      setStatus("Ready when you are");
+    }
+  }
+}
+
+/* ---------------- VOICE RECOGNITION ---------------- */
+
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+
+let recognition = null;
+let shouldListen = false;
+let phase = "wake";
+let commandBuffer = "";
+let commandTimer = null;
+
+function initializeRecognition() {
+  if (!SpeechRecognition) {
+    setStatus("Speech recognition is not supported in this browser");
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = "en-US";
+
+  recognition.onresult = event => {
+    if (!shouldListen || busy) return;
+
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const result = event.results[i];
+      if (!result.isFinal) continue;
+
+      const transcript = result[0].transcript.trim();
+
+      if (phase === "wake") {
+        const match = transcript.match(/hey\s+friend/i);
+
+        if (match) {
+          const remainder = transcript
+            .slice(match.index + match[0].length)
+            .trim()
+            .replace(/^[,.:;!?-]+/, "")
+            .trim();
+
+          phase = "command";
+          setStatus("I'm listening...", "active");
+
+          if (remainder) {
+            commandBuffer = remainder;
+            scheduleCommand();
+          }
+        }
+      } else if (phase === "command") {
+        commandBuffer += " " + transcript;
+        scheduleCommand();
+      }
+    }
+  };
+
+  recognition.onerror = event => {
+    if (event.error === "not-allowed" ||
+        event.error === "service-not-allowed") {
+      shouldListen = false;
+      setStatus("Microphone permission was denied");
+      return;
+    }
+
+    if (event.error !== "no-speech" && event.error !== "aborted") {
+      setStatus("Voice recognition error: " + event.error);
+    }
+  };
+
+  recognition.onend = () => {
+    if (shouldListen && !busy) restartRecognition();
+  };
+}
+
+function scheduleCommand() {
+  clearTimeout(commandTimer);
+
+  commandTimer = setTimeout(() => {
+    const command = commandBuffer.trim();
+
+    if (command && !busy) {
+      commandBuffer = "";
+      phase = "wake";
+      sendMessage(command);
+    }
+  }, 850);
+}
+
+function restartRecognition() {
+  if (!recognition || !shouldListen || busy) return;
+
+  try {
+    recognition.start();
+  } catch {}
+}
+
+function startListening() {
+  if (!SpeechRecognition) {
+    setStatus("Use Chrome or Edge for voice recognition");
+    return;
+  }
+
+  if (!recognition) initializeRecognition();
+  if (!recognition) return;
+
+  shouldListen = true;
+  speechCancelled = false;
+  phase = "wake";
+  commandBuffer = "";
+
+  setStatus("Listening for Hey Friend...", "active");
+  restartRecognition();
+}
+
+function stopListening() {
+  shouldListen = false;
+  clearTimeout(commandTimer);
+  commandBuffer = "";
+  phase = "wake";
+
+  if (recognition) {
+    try { recognition.stop(); } catch {}
+  }
+
+  if (abortController) abortController.abort();
+
+  cancelSpeech();
+  setStatus("Stopped");
+}
+
+/* ---------------- SETTINGS ---------------- */
+
+function loadVoices() {
+  const voices = speechSynthesis.getVoices();
+  const select = $("voiceSelect");
+  const previous = select.value;
+
+  select.innerHTML = "";
+
+  voices.forEach(voice => {
+    const option = document.createElement("option");
+    option.value = voice.name;
+    option.textContent = voice.name + " (" + voice.lang + ")";
+    select.appendChild(option);
+  });
+
+  if (previous && [...select.options].some(o => o.value === previous)) {
+    select.value = previous;
+  }
+}
+
+speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+$("settingsButton").onclick = () => {
+  $("settingsModal").classList.add("show");
+};
+
+$("closeSettings").onclick = () => {
+  $("settingsModal").classList.remove("show");
+};
+
+$("saveSettings").onclick = () => {
+  apiKey = $("apiKey").value.trim();
+  $("settingsModal").classList.remove("show");
+  setStatus(apiKey ? "Settings saved" : "Add your Groq API key to begin");
+};
+
+$("speechSpeed").oninput = () => {
+  $("speedValue").textContent =
+    Number($("speechSpeed").value).toFixed(1) + "x";
+};
+
+/* ---------------- BUTTON EVENTS ---------------- */
+
+$("addSong").onclick = addSong;
+$("songUrl").addEventListener("keydown", event => {
+  if (event.key === "Enter") addSong();
+});
+
+$("songName").addEventListener("keydown", event => {
+  if (event.key === "Enter") addSong();
+});
+
+$("playPauseSong").onclick = () => {
+  if (musicPlaying) pauseMusic();
+  else resumeMusic();
+};
+
+$("nextSong").onclick = playNextSong;
+$("previousSong").onclick = playPreviousSong;
+$("shuffleSong").onclick = playRandomSong;
+
+$("startButton").onclick = startListening;
+$("stopButton").onclick = stopListening;
+
+$("sendButton").onclick = () => {
+  sendMessage($("messageInput").value);
+};
+
+$("messageInput").addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    sendMessage($("messageInput").value);
+  }
+});
+
+$("clearButton").onclick = () => {
+  if (busy) return;
+
+  conversation = [];
+  chat.innerHTML = "";
+
+  addMessage(
+    "assistant",
+    'Chat cleared! Say **"Hey Friend"** whenever you need me.'
+  );
+
+  setStatus("Chat cleared");
+};
+
+/* ---------------- STARTUP ---------------- */
+
+renderSongList();
+
+if (!SpeechRecognition) {
+  setStatus("Voice recognition works best in Chrome or Edge");
+}
+</script>
+</body>
+</html>
